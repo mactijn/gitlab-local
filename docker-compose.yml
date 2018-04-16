@@ -1,0 +1,60 @@
+version: '3.0'
+
+services:
+
+  gitlab:
+    image: gitlab/gitlab-ce:latest
+    hostname: "gitlab.localhost"
+    ports:
+      - "127.0.0.1:2222:22"
+      - "127.0.0.1:80:80"
+      - "127.0.0.1:5000:5000"
+    volumes:
+      - ./gitlab:/etc/gitlab
+      - gitlab_data:/var/opt/gitlab
+    networks:
+      default:
+        ipv4_address: 10.12.14.16
+        aliases:
+          - gitlab.localhost
+
+  # create config with:
+    # docker run --rm -it \
+    #    --network gitlab_default \
+    #    -v ${PWD}/build-runner:/etc/gitlab-runner \
+    #    gitlab/gitlab-runner:latest register \
+    #    --non-interactive \
+    #    --registration-token <TOKEN> \
+    #    --url http://gitlab/ \
+    #    --description 'build runner' \
+    #    --locked=false \
+    #    --executor docker \
+    #    --docker-image docker:latest \
+    #    --docker-volumes '/var/run/docker.sock:/var/run/docker.sock' \
+    #    --docker-extra-hosts gitlab.localhost:10.12.14.16
+
+  build-runner:
+    image: gitlab/gitlab-runner:latest
+    volumes:
+      - ./build-runner:/etc/gitlab-runner:ro
+    environment:
+        DOCKER_HOST: "tcp://build-dind:2375"
+    depends_on:
+      - build-dind
+
+  build-dind:
+    image: docker:dind
+    privileged: true
+    command: [ '--insecure-registry', 'gitlab.localhost:5000' ]
+    volumes:
+      - build-dind_data:/var/lib/docker
+
+volumes:
+  build-dind_data:
+  gitlab_data:
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 10.12.14.0/24

@@ -1,3 +1,9 @@
-gitlab/**
-!gitlab/gitlab.rb
-build-runner/config.toml
+/**
+!/**/
+
+!/.gitignore
+!.gitkeep
+
+!/docker-compose*.yml
+!/*.sh
+!/gitlab/gitlab.rb

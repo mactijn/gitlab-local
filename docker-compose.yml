@@ -5,6 +5,7 @@ services:
   gitlab:
     image: gitlab/gitlab-ce:latest
     hostname: "gitlab.localhost"
+    restart: unless-stopped
     ports:
       - "127.0.0.1:2222:22"
       - "127.0.0.1:80:80"
@@ -23,6 +24,7 @@ services:
 
   runner:
     image: gitlab/gitlab-runner:alpine
+    restart: unless-stopped
     volumes:
       - ./runner:/etc/gitlab-runner:ro
     environment:
@@ -33,6 +35,7 @@ services:
 
   dind:
     image: docker:dind
+    restart: unless-stopped
     privileged: true
     command: [ '--insecure-registry', 'gitlab.localhost:5000' ]
     volumes:

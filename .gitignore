@@ -1,9 +1,23 @@
+# ignore everything
 /**
+
+# exclude directories
 !/**/
 
+# exclude only this file, not allowed in subdirs
 !/.gitignore
+
+# exclude .gitkeep anywhere, to include empty directories
 !.gitkeep
 
+# documentation
+!/*.md
+!/docs/
+
+# runtime-specific
+!/Makefile
+!/run.sh
 !/docker-compose*.yml
-!/*.sh
+
+# config
 !/gitlab/gitlab.rb

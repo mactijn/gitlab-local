@@ -15,22 +15,21 @@ DOCKER_COMPOSE_BIN = $(DOCKER_BIN) run --rm -it -v "$(PWD):$(PWD)" -w "$(PWD)" -
 # DOCKER_COMPOSE_BIN := $(shell which docker-compose)
 
 
-.PHONY: default run stop update destructive-reset logs _/*
+.PHONY: default run stop update destructive-reset logs _/
 
 # default target is to run
 default: run
 
-run:
-	$(MAKE) -j1 _/docker-compose/up
-
+run: _/docker-compose/up
 stop: _/docker-compose/down
 restart: _/docker-compose/restart
 update: _/docker-compose/build _/docker-compose/pull
 destructive-reset: _/destructive-reset
-reset-from-backup: _/reset-from-backup
+reset-from-backup: _/destructive-reset _/gitlab/backup/restore
 logtail: _/docker-compose/logs
 create-backup: _/gitlab/backup/create
 restore-backup: _/gitlab/backup/restore
+wait-for-gitlab: _/gitlab/wait-healthy
 
 _/destructive-reset:
 	$(DOCKER_COMPOSE_BIN) kill
@@ -38,11 +37,13 @@ _/destructive-reset:
 	rm -rf runner/ gitlab/trusted-certs/
 	rm -f gitlab/ssh_host_*_key gitlab/ssh_host_*_key.pub gitlab/gitlab-secrets.json
 
-_/reset-from-backup: _/destructive-reset _/gitlab/backup/restore
+_/gitlab/run-wait:
+	$(MAKE) -j1 _/gitlab/run _/gitlab/wait-healthy
 
 _/gitlab/run:
 	$(info The gitlab service will be started, however it might take a while to become available.)
 	$(DOCKER_COMPOSE_BIN) up -d gitlab
+
 
 _/gitlab/wait-healthy:
 	$(info Waiting for gitlab to become available (timeout $(SERVICE_TIMEOUT)s)...)
@@ -59,10 +60,10 @@ _/gitlab/wait-healthy:
 		sleep 1; \
 	done
 
-_/gitlab/backup/create: _/gitlab/run _/gitlab/wait-healthy
+_/gitlab/backup/create: _/gitlab/run-wait
 	$(DOCKER_COMPOSE_BIN) exec gitlab gitlab-rake gitlab:backup:create
 
-_/gitlab/backup/restore: _/gitlab/run _/gitlab/wait-healthy
+_/gitlab/backup/restore: _/gitlab/run-wait
 	$(DOCKER_COMPOSE_BIN) exec gitlab gitlab-rake gitlab:backup:restore
 	$(MAKE) -j1 _/docker-compose/restart
 
@@ -73,7 +74,8 @@ _/docker-compose/up: _/runner/setup
 _/docker-compose/down:
 	$(DOCKER_COMPOSE_BIN) down
 
-_/docker-compose/restart: _/docker-compose/down _/docker-compose/up
+_/docker-compose/restart:
+	$(DOCKER_COMPOSE_BIN) restart
 
 _/docker-compose/pull:
 	$(DOCKER_COMPOSE_BIN) pull
@@ -88,8 +90,7 @@ _/docker-compose/logs:
 ### gitlab-runner stuff
 _/runner/setup: runner/config.toml
 
-runner/config.toml:
-	$(MAKE) -j1 _/gitlab/run _/gitlab/wait-healthy
+runner/config.toml: _/gitlab/run-wait
 	mkdir -p runner/
 	echo "concurrent = 4" > runner/config.toml
 	$(DOCKER_COMPOSE_BIN) run -v "$(PWD)/runner:/etc/gitlab-runner" --rm --no-deps --use-aliases \

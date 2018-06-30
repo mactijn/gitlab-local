@@ -100,7 +100,8 @@ _/docker-compose/logs:
 ### runner stuff
 
 _/runner/setup:
-	$(MAKE) -j1 _/gitlab/start-wait runner/config.toml
+	$(MAKE) -q runner/config.toml \
+	|| $(MAKE) -j1 _/gitlab/start-wait runner/config.toml
 
 _/runner/start:
 	$(DOCKER_COMPOSE_BIN) up -d runner
@@ -114,7 +115,7 @@ runner/config.toml:
 	$(DOCKER_COMPOSE_BIN) run -v "$(PWD)/runner:/etc/gitlab-runner" --rm --no-deps --use-aliases \
     runner register \
 	    --non-interactive \
-	    --registration-token "DEMO_RUNNER_TOKEN" \
+	    --registration-token "RUNNER_REGISTRATION_TOKEN" \
 	    --url http://gitlab.localhost/ \
 	    --description 'Runner' \
 	    --locked=false \

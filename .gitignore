@@ -14,10 +14,10 @@
 !/*.md
 !/docs/
 
-# runtime-specific
+# content-specific
 !/Makefile
 !/run.sh
-!/docker-compose*.yml
+!/docker-compose.yml
 
 # config
 !/gitlab/gitlab.rb

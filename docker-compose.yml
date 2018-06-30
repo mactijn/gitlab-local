@@ -28,7 +28,7 @@ services:
     volumes:
       - ./runner:/etc/gitlab-runner:ro
     environment:
-      DOCKER_HOST: "tcp://build-dind:2375"
+      DOCKER_HOST: "tcp://dind:2375"
     depends_on:
       - dind
       - gitlab

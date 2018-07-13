@@ -4,40 +4,55 @@ services:
 
   gitlab:
     image: gitlab/gitlab-ce:latest
-    hostname: "gitlab.localhost"
+    hostname: gitlab.localhost
     restart: unless-stopped
+
+    networks:
+      localnet:
+        ipv4_address: 10.12.14.16
+        aliases: [ gitlab.localhost ]
+
     ports:
       - "127.0.0.1:2222:22"
       - "127.0.0.1:80:80"
       - "127.0.0.1:5000:5000"
+
     volumes:
-      - ./gitlab:/etc/gitlab
       - gitlab_data:/var/opt/gitlab
+      - ./gitlab:/etc/gitlab
       - ./backups:/var/opt/gitlab/backups
+
     tmpfs:
       - /prometheus
-    networks:
-      default:
-        ipv4_address: 10.12.14.16
-        aliases:
-          - gitlab.localhost
+
 
   runner:
     image: gitlab/gitlab-runner:alpine
     restart: unless-stopped
-    volumes:
-      - ./runner:/etc/gitlab-runner:ro
-    environment:
-      DOCKER_HOST: "tcp://dind:2375"
+
     depends_on:
       - dind
       - gitlab
 
+    environment:
+      DOCKER_HOST: "tcp://dind:2375"
+
+    networks:
+      localnet:
+
+    volumes:
+      - ./runner:/etc/gitlab-runner:ro
+
+
   dind:
     image: docker:dind
-    restart: unless-stopped
-    privileged: true
     command: [ '--insecure-registry', 'gitlab.localhost:5000' ]
+    privileged: true
+    restart: unless-stopped
+
+    networks:
+      localnet:
+
     volumes:
       - dind_data:/var/lib/docker
 
@@ -46,7 +61,7 @@ volumes:
   gitlab_data:
 
 networks:
-  default:
+  localnet:
     ipam:
       config:
         - subnet: 10.12.14.0/24

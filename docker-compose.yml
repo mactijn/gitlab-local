@@ -6,6 +6,7 @@ services:
     image: gitlab/gitlab-ce:latest
     hostname: gitlab.localhost
     restart: unless-stopped
+    privileged: true
 
     networks:
       localnet:

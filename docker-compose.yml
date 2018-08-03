@@ -1,17 +1,17 @@
 version: '3.0'
-
 services:
-
   gitlab:
     image: gitlab/gitlab-ce:latest
-    hostname: gitlab.localhost
     restart: unless-stopped
     privileged: true
 
     networks:
       localnet:
         ipv4_address: 10.12.14.16
-        aliases: [ gitlab.localhost ]
+        aliases:
+          - gitlab.localhost
+          - registry.localhost
+          - mattermost.localhost
 
     ports:
       - "127.0.0.1:2222:22"
@@ -20,8 +20,8 @@ services:
 
     volumes:
       - gitlab_data:/var/opt/gitlab
-      - ./gitlab:/etc/gitlab
       - ./backups:/var/opt/gitlab/backups
+      - ./gitlab:/etc/gitlab
 
     tmpfs:
       - /prometheus
@@ -42,12 +42,12 @@ services:
       localnet:
 
     volumes:
-      - ./runner:/etc/gitlab-runner:ro
+      - ./runner:/etc/gitlab-runner
 
 
   dind:
     image: docker:dind
-    command: [ '--insecure-registry', 'gitlab.localhost:5000' ]
+    command: [ '--insecure-registry', 'registry.localhost' ]
     privileged: true
     restart: unless-stopped
 
@@ -56,10 +56,14 @@ services:
 
     volumes:
       - dind_data:/var/lib/docker
+      - dind_cache:/cache
+
 
 volumes:
   dind_data:
+  dind_cache:
   gitlab_data:
+
 
 networks:
   localnet:

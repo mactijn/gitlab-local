@@ -16,8 +16,7 @@ ifeq ($(DOCKER_COMPOSE_BIN),)
 DOCKER_COMPOSE_BIN = $(DOCKER_BIN) run --rm -it -v "$(PWD):$(PWD)" -w "$(PWD)" -v /var/run/docker.sock:/var/run/docker.sock $(DOCKER_COMPOSE_IMAGE)
 endif
 
-
-.PHONY: default run stop update destructive-reset logs _/* _/*/* _/*/*/*
+.PHONY: default run stop update destructive-reset logs
 
 # default target is to run
 default: run
@@ -28,7 +27,7 @@ restart: _/docker-compose/restart
 update: _/docker-compose/build _/docker-compose/pull _/docker-compose/up
 destructive-reset: _/destructive-reset
 reset-from-backup: _/destructive-reset _/gitlab/backup/restore
-logtail: _/docker-compose/logs
+logs: _/docker-compose/logs
 create-backup: _/gitlab/backup/create
 restore-backup: _/gitlab/backup/restore
 wait-for-gitlab: _/gitlab/wait-healthy
@@ -110,9 +109,9 @@ _/runner/stop:
 	$(DOCKER_COMPOSE_BIN) stop runner
 
 runner/config.toml:
-	mkdir -p runner/
+	mkdir -p runner
 	echo "concurrent = 4" > runner/config.toml
-	$(DOCKER_COMPOSE_BIN) run -v "$(PWD)/runner:/etc/gitlab-runner" --rm --no-deps --use-aliases \
+	$(DOCKER_COMPOSE_BIN) run --rm --no-deps --use-aliases \
     runner register \
 	    --non-interactive \
 	    --registration-token "RUNNER_REGISTRATION_TOKEN" \
@@ -121,5 +120,8 @@ runner/config.toml:
 	    --locked=false \
 	    --executor docker \
 	    --docker-image docker:latest \
-	    --docker-volumes '/var/run/docker.sock:/var/run/docker.sock' \
-	    --docker-extra-hosts gitlab.localhost:10.12.14.16
+			--docker-volumes '/var/run/docker.sock:/var/run/docker.sock' \
+	    --docker-volumes '/cache:/cache' \
+	    --docker-extra-hosts gitlab.localhost:10.12.14.16 \
+	    --docker-extra-hosts registry.localhost:10.12.14.16 \
+	    --docker-extra-hosts mattermost.localhost:10.12.14.16
